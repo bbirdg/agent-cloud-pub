@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Fix: `agent-cloud off memory` now removes the memory skill from Antigravity too. It used to come back as a copy of
+  another agent's skills folder in the same run.
+
 ## 0.1.2
 
 - The release workflow skips a version that is already on npm.

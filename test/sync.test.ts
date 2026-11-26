@@ -119,8 +119,12 @@ describe("off and on (per PC)", () => {
     const claudeMd = readFileSync(path.join(w.home, ".claude", "CLAUDE.md"), "utf8");
     expect(claudeMd).toContain("# Global instructions");
     expect(claudeMd).not.toContain("agent-memory:start");
-    expect(existsSync(path.join(w.home, ".claude", "skills", "agent-memory"))).toBe(false);
+    // Every agent drops the memory skill, including the ones that get copies of other agents' skills (Antigravity).
+    for (const d of [".claude/skills", ".agents/skills", ".gemini/config/skills", ".codex/skills"]) {
+      expect(existsSync(path.join(w.home, d, "agent-memory")), d).toBe(false);
+    }
     expect(existsSync(path.join(w.home, ".claude", "skills", "example-skill"))).toBe(true);
+    expect(existsSync(path.join(w.home, ".gemini", "config", "skills", "example-skill"))).toBe(true);
     expect(Object.keys(json(".claude.json").mcpServers)).toEqual(["context7"]);
     expect(readFileSync(path.join(w.home, ".codex", "config.toml"), "utf8")).not.toContain("agent-memory");
 

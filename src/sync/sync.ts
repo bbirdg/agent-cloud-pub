@@ -17,6 +17,7 @@ import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node
 import os from "node:os";
 import path from "node:path";
 import { pointerMd, SKILL_MD } from "../../server/src/memory-text.ts";
+import { RESERVED_SKILLS } from "../../server/src/skills-select.ts";
 import { findProject, PACKAGE_NAME, packageVersion, readPcState, readSettings, requireProject, secretValues, writePcState } from "../project.ts";
 import { antigravity, claudeCode, claudeDesktop, codex, type Content, cursor, folderDigest, genericAgentsMd, readFolder, rulesFile, type Skill, SKILL_DIRS, writeFolder } from "./adapters.ts";
 import { expandHome, hash, Sync, type Entry } from "./core.ts";
@@ -66,7 +67,9 @@ export async function main(args: string[]): Promise<void> {
   const mirroredSkills = (): Skill[] => {
     if (!mirror) return [];
     if (mirrored) return mirrored;
-    const seen = new Set(ownSkills.map((s) => s.name));
+    // agent-memory and global-rules come only from agent-cloud itself (and only while they're on), never as a copy
+    // of another agent's folder, which may still hold one this same run is about to remove.
+    const seen = new Set([...ownSkills.map((s) => s.name), ...RESERVED_SKILLS]);
     mirrored = [];
     for (const source of mirror.sources) {
       const src = resolveDir(source.dir);
