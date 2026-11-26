@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- The release workflow skips a version that is already on npm.
+- No changes to the CLI or the memory server.
+
 ## 0.1.1
 
 - The first release built and signed by GitHub Actions: npm shows its provenance (which commit and workflow made it).
