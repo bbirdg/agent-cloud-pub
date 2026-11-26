@@ -2,7 +2,7 @@
   "name": "agent-cloud",
   "version": "0.1.0",
   "description": "One home for your AI agent setup: a private shared memory server on your own Cloudflare account, plus your rules, skills, subagents and MCP servers synced into Claude Code, Codex, Antigravity, Cursor and the Claude app on every PC.",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0-only",
   "author": "bbirdg",
   "repository": {
     "type": "git",
@@ -18,8 +18,7 @@
     "dist/",
     "server/src/",
     "server/migrations/",
-    "templates/",
-    "NOTICE"
+    "templates/"
   ],
   "engines": {
     "node": ">=22.12"

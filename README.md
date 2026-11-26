@@ -103,4 +103,8 @@ points these out.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+Copyright 2026 bbirdg. [GNU AGPL-3.0](LICENSE).
+
+Using agent-cloud for yourself, unchanged, asks nothing of you. If you change the memory server and let others use
+your changed version over a network (a hosted service, say), the AGPL requires you to offer them its source code under
+the same license.

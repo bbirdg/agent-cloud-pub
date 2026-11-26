@@ -2,7 +2,7 @@
 
 ## 0.1.0
 
-First public version.
+First public version, under the GNU AGPL-3.0.
 
 - `init`, `setup`, `deploy`, `status`: create your folder, deploy your memory server on your Cloudflare account
   (workers.dev or your own domain), connect a PC, switch on the nightly backup.
