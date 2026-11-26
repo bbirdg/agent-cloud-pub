@@ -32,12 +32,14 @@ describe("sync into a fresh home", () => {
     expect(existsSync(path.join(w.home, ".claude", "agents", "reviewer.md"))).toBe(true);
     expect(existsSync(path.join(w.home, ".codex", "agents", "reviewer.toml"))).toBe(true);
 
-    // Claude Code: hook, built-in memory off, MCP servers with the token filled in (test runs write the file).
+    // Claude Code: hook, built-in memory off, MCP servers with secrets as ${NAME} references it fills from its
+    // environment (never the value in its file); the other agents get the value.
     const settings = json(".claude/settings.json");
     expect(settings.autoMemoryEnabled).toBe(false);
     expect(JSON.stringify(settings.hooks.SessionStart)).toContain(" hook");
     const claudeJson = json(".claude.json");
-    expect(claudeJson.mcpServers["agent-memory"]).toEqual({ type: "http", url: "https://memory.example.com/mcp", headers: { Authorization: `Bearer ${TOKEN}` } });
+    expect(claudeJson.mcpServers["agent-memory"]).toEqual({ type: "http", url: "https://memory.example.com/mcp", headers: { Authorization: "Bearer ${AGENT_MEMORY_TOKEN}" } });
+    expect(readFileSync(path.join(w.home, ".claude.json"), "utf8")).not.toContain(TOKEN);
     expect(claudeJson.mcpServers.context7.url).toBe("https://mcp.context7.com/mcp");
     expect(readFileSync(path.join(w.home, ".codex", "config.toml"), "utf8")).toContain(`Authorization = 'Bearer ${TOKEN}'`);
     expect(json(".gemini/config/mcp_config.json").mcpServers["agent-memory"].serverUrl).toBe("https://memory.example.com/mcp");
@@ -181,6 +183,23 @@ describe("review fixes", () => {
     expect(existsSync(path.join(w.home, ".agent-cloud", "managed.json"))).toBe(true);
   });
 
+  it("keeps only its own newest backups and never deletes another tool's .bak file", async () => {
+    w = await world();
+    const cursor = path.join(w.home, ".cursor", "mcp.json");
+    parentOf(cursor);
+    writeFileSync(cursor, "{}");
+    const foreign = `${cursor}.bak-20991231-235959`;
+    writeFileSync(foreign, "someone else's backup");
+    const ours = (n: number) => `${cursor}.bak-2020-01-0${n}T00-00-00-000Z`;
+    for (const n of [1, 2, 3, 4]) writeFileSync(ours(n), "{}");
+    await run("--apply", "--adopt");
+    const { readdirSync } = await import("node:fs");
+    const left = readdirSync(path.dirname(cursor)).filter((n) => n.startsWith("mcp.json.bak-"));
+    expect(left).toContain(path.basename(foreign));
+    expect(left.filter((n) => n.endsWith("Z"))).toHaveLength(3); // this run's copy + the 2 newest older ones
+    expect(left).not.toContain(path.basename(ours(1)));
+  });
+
   it.skipIf(process.platform === "win32")("files holding secrets, and their backups, are readable by the user only", async () => {
     w = await world();
     const cursor = path.join(w.home, ".cursor", "mcp.json");
@@ -188,7 +207,7 @@ describe("review fixes", () => {
     writeFileSync(cursor, "{}");
     await run("--apply", "--adopt");
     const { statSync, readdirSync } = await import("node:fs");
-    for (const f of [".claude.json", ".codex/config.toml", ".cursor/mcp.json", ".gemini/config/mcp_config.json"]) expect(statSync(path.join(w.home, f)).mode & 0o077, f).toBe(0);
+    for (const f of [".codex/config.toml", ".cursor/mcp.json", ".gemini/config/mcp_config.json"]) expect(statSync(path.join(w.home, f)).mode & 0o077, f).toBe(0);
     const backup = readdirSync(path.dirname(cursor)).find((n) => n.startsWith("mcp.json.bak-"))!;
     expect(statSync(path.join(path.dirname(cursor), backup)).mode & 0o077).toBe(0);
   });

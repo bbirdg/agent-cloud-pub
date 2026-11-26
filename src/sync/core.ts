@@ -85,8 +85,9 @@ export class Sync {
     makePrivate(copy);
     this.backups.add(file);
     const dir = path.dirname(file);
-    const prefix = `${path.basename(file)}.bak-`;
-    const old = readdirSync(dir).filter((n) => n.startsWith(prefix)).sort().reverse().slice(KEEP_BACKUPS);
+    // Only this tool's own copies (its exact timestamp form); any other .bak file is left alone.
+    const mine = new RegExp(`^${escapeRegex(path.basename(file))}\\.bak-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z$`);
+    const old = readdirSync(dir).filter((n) => mine.test(n)).sort().reverse().slice(KEEP_BACKUPS);
     for (const n of old) rmSync(path.join(dir, n), { force: true });
   }
 
@@ -197,6 +198,7 @@ export function makePrivate(file: string): void {
 }
 
 const KEEP_BACKUPS = 3;
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export function expandHome(p: string, home: string): string {
   return p.startsWith("~") ? path.join(home, p.slice(1)) : p;

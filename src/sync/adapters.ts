@@ -5,6 +5,7 @@
  */
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { type Entry, expandHome, hash, readText, replaceFile, Sync, writeText } from "./core.ts";
 import { desktopConfigPath } from "./desktop.ts";
 import { type Catalog, defFor, findTomlBlock, toAntigravity, toClaude, toClaudeDesktop, toCodex, toCursor, tomlBlock } from "./mcp.ts";
@@ -13,6 +14,8 @@ export interface Content {
   home: string;
   /** Values for the catalog's ${env:NAME} secrets. */
   secrets: Record<string, string | undefined>;
+  /** How Claude Code's MCP servers are written: through its CLI (real runs), or straight into <home>/.claude.json (test runs). */
+  claudeMcp: "cli" | "file";
   globalRules: string;
   agentRules(harness: string): string;
   memoryBlock: string;
@@ -173,9 +176,9 @@ export function claudeCode(sync: Sync, c: Content): Entry[] {
   entries.push(jsonKeyEntry("claude-code:setting:autoMemoryEnabled", settings, ["autoMemoryEnabled"], false));
   entries.push(hookEntry(settings, c.hookCommand));
 
-  // MCP servers: user-scope entries in ~/.claude.json (what `claude mcp add --scope user` writes), each server one key.
-  // Written straight to the file, never through `claude mcp add-json`: that would put the filled-in secrets on a
-  // command line. Only the mcpServers keys this tool owns change; everything else in the file is kept.
+  // MCP servers: user-scope entries in ~/.claude.json, which Claude Code itself keeps writing, so real runs go through
+  // its own CLI (the documented way). Secrets stay ${NAME} references (see toClaude), never values on the command line.
+  // Test runs (--home) write the file directly: they never call the real `claude`.
   const claudeJson = path.join(c.home, ".claude.json");
   const load = () => (existsSync(claudeJson) ? (JSON.parse(readFileSync(claudeJson, "utf8")) as { mcpServers?: Record<string, unknown> }) : {});
   const want = new Set<string>();
@@ -188,20 +191,40 @@ export function claudeCode(sync: Sync, c: Content): Entry[] {
     },
     desired: def === null ? null : canonical(def),
     write: (t) => {
-      const all = load();
-      all.mcpServers ??= {};
-      if (t === null) delete all.mcpServers[name];
-      else all.mcpServers[name] = JSON.parse(t);
-      replaceFile(claudeJson, JSON.stringify(all, null, 2) + "\n", { private: true });
+      if (c.claudeMcp === "file") {
+        const all = load();
+        all.mcpServers ??= {};
+        if (t === null) delete all.mcpServers[name];
+        else all.mcpServers[name] = JSON.parse(t);
+        replaceFile(claudeJson, JSON.stringify(all, null, 2) + "\n");
+        return;
+      }
+      const previous = load().mcpServers?.[name];
+      const run = (args: string[]) => {
+        try {
+          execFileSync("claude", args, { stdio: "ignore", windowsHide: true });
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code === "ENOENT") throw new Error("the `claude` command wasn't found on PATH (Claude Code's native installer adds it)");
+          throw new Error(`\`claude mcp ${args[1]}\` failed`); // never the command line: it holds the server's definition
+        }
+      };
+      if (previous !== undefined) run(["mcp", "remove", "--scope", "user", name]);
+      if (t === null) return;
+      try {
+        run(["mcp", "add-json", "--scope", "user", name, t]);
+      } catch (error) {
+        // Put the previous definition back rather than leave the server missing.
+        if (previous !== undefined) run(["mcp", "add-json", "--scope", "user", name, JSON.stringify(previous)]);
+        throw error;
+      }
     },
     adoptable: true,
-    backupFile: claudeJson,
   });
   for (const [name, entry] of Object.entries(c.catalog.servers)) {
     const def = defFor(entry, "claude-code");
     if (!def) continue;
     want.add(`claude-code:mcp:${name}`);
-    entries.push(make(name, toClaude(def, c.secrets)));
+    entries.push(make(name, toClaude(def)));
   }
   entries.push(...mcpRemovals(sync, "claude-code", want, (n) => make(n, null)));
   return entries;

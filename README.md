@@ -88,8 +88,10 @@ for a one-off clean Claude Code session, `claude --safe-mode` with `ENABLE_CLAUD
 
 ## Platforms
 
-Windows is verified end to end. macOS and Linux are covered by CI for the CLI and the sync; the real agent apps on
-them haven't been checked by hand yet, and the Claude app's config path on Linux follows the Electron default.
+CI runs the CLI and the sync on Windows, macOS and Linux (Node 22 and 24), the memory server in the Workers runtime,
+and an install from the packed package. `setup` and `deploy` have been run against a real Cloudflare account from
+Windows. Not checked by hand yet: the real agent apps on macOS and Linux, and the Claude app's config path on Linux
+(it follows the Electron default).
 On Windows with the Store build of the Claude app, a program you install under `AppData` from a terminal inside a
 Claude session lands in the app's private copy of `AppData`, where other agents can't see it; `agent-cloud status`
 points these out.

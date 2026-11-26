@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { findProject, packageVersion, pcDir, readPcState, readSettings, secretValues } from "./project.ts";
+import { envScript, findProject, packageVersion, pcDir, readPcState, readSettings, secretValues } from "./project.ts";
 import type { Catalog } from "./sync/mcp.ts";
 
 export async function main(args: string[]): Promise<void> {
@@ -44,6 +44,15 @@ export async function main(args: string[]): Promise<void> {
   const needed = [...new Set([...JSON.stringify(catalog.servers).matchAll(/\$\{env:([A-Za-z_][A-Za-z0-9_]*)\}/g)].map((m) => m[1]!))];
   const missing = needed.filter((n) => !secrets[n]);
   missing.length ? warn(`secrets not set on this PC (their servers are left out): ${missing.join(", ")} -> \`npx agent-cloud secret set <NAME>\``) : ok("every secret the MCP servers need is set");
+  // Claude Code reads its servers' secrets from its own environment.
+  const notInEnv = needed.filter((n) => secrets[n] && !process.env[n]);
+  if (notInEnv.length) {
+    warn(
+      process.platform === "win32"
+        ? `Claude Code won't see ${notInEnv.join(", ")} until it is restarted (new windows read the saved user variables)`
+        : `Claude Code won't see ${notInEnv.join(", ")}: add \`source ${envScript()}\` to your shell profile (~/.zshrc or ~/.bashrc), then open a new terminal`,
+    );
+  }
 
   const head = (() => {
     try {

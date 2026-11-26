@@ -81,8 +81,13 @@ export function localize(catalog: Catalog, local: Local, exists: (p: string) => 
 }
 
 // ---------- Claude Code (claude mcp add-json) ----------
-export function toClaude(def: McpDef, vars: Vars): Record<string, unknown> {
-  const { extra, ...rest } = fill(def, vars);
+/**
+ * Secrets stay references (${NAME}), which Claude Code fills from its own environment when it starts a server: the
+ * documented way to keep a secret out of ~/.claude.json and off the command line. `agent-cloud secret set` puts the
+ * value in that environment (a Windows user variable; ~/.agent-cloud/env.sh for the shell on macOS and Linux).
+ */
+export function toClaude(def: McpDef): Record<string, unknown> {
+  const { extra, ...rest } = mapStrings(def, (s) => s.replace(PLACEHOLDER, "${$1}")) as McpDef;
   return { ...rest, ...(extra ?? {}) };
 }
 

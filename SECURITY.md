@@ -13,5 +13,8 @@ tab. Please don't open a public issue for it.
   setup (`ALLOWED_GITHUB_USER_ID`).
 - The nightly backup uses a token that can only export.
 - The server refuses to store text that looks like a key or password; served skills are checked the same way.
-- Secrets stay out of your config folder: each PC keeps them in `~/.agent-cloud/secrets.json` (readable only by you
-  on macOS and Linux) and writes them only into the agents' own local config files.
+- Secrets stay out of your config folder and off command lines. Each PC keeps them in `~/.agent-cloud/secrets.json`
+  (readable only by you on macOS and Linux). Claude Code gets `${NAME}` references, filled from its environment (a
+  Windows user variable, or `~/.agent-cloud/env.sh` on macOS and Linux). Codex, Cursor, Antigravity and the Claude app
+  can't read references, so their local config files hold the values; on macOS and Linux those files and their
+  backups are made readable only by you.

@@ -98,6 +98,8 @@ export async function main(args: string[]): Promise<void> {
     agents: (h) => listFiles(path.join(config, "agents", h)).map((file) => ({ file, text: read(path.join(config, "agents", h, file)) })),
     catalog,
     hookCommand: hookCommand(project),
+    // A test run never calls the real `claude` CLI: it writes that home's .claude.json directly.
+    claudeMcp: testHome ? "file" : "cli",
   };
   const contentFor = (h: string): Content => {
     if (!mirror?.to.includes(h)) return { ...base, skills: ownSkills, mirrored: [] };

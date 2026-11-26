@@ -147,6 +147,7 @@ export async function main(args: string[]): Promise<void> {
   const start = await fetch(`${s.memory.url}/setup/github-app/start`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
   const body = (await start?.json().catch(() => ({}))) as { url?: string; error?: string } | undefined;
   if (body?.url) console.log(`Open this link within 15 minutes and confirm on GitHub:\n  ${body.url}\nThen add ${s.memory.url}/mcp as a custom connector on claude.ai.`);
+  else if (start?.status === 401) console.log("Skipped: the server refused this PC's device token (revoked, or from another server?). Fix it with `npx agent-cloud device add <name> --save`, then run setup again.");
   else console.log(body?.error ? `Skipped: ${body.error}` : "Skipped: couldn't reach the server; run setup again later.");
 
   if (!args.includes("--no-backup")) backupSetup(project, s, d1);

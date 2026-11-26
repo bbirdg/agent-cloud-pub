@@ -129,7 +129,29 @@ export function saveSecret(name: string, value: string, home = os.homedir()): vo
   } catch {
     // Windows: the file sits in the user's own profile
   }
+  if (path.resolve(home) === path.resolve(os.homedir())) exportSecret(name, value, all, home);
 }
+
+/**
+ * Claude Code fills ${NAME} in its MCP servers from its own environment, so a secret also goes there: a Windows user
+ * variable (new agent windows see it), or ~/.agent-cloud/env.sh on macOS and Linux (loaded by the shell profile).
+ */
+function exportSecret(name: string, value: string, all: Record<string, string>, home: string): void {
+  if (process.platform === "win32") {
+    // Name and value travel in the child's environment, never on its command line.
+    execFileSync("powershell", ["-NoProfile", "-Command", "[Environment]::SetEnvironmentVariable($env:AC_NAME, $env:AC_VALUE, 'User')"], {
+      stdio: "ignore",
+      windowsHide: true,
+      env: { ...process.env, AC_NAME: name, AC_VALUE: value },
+    });
+    return;
+  }
+  const sh = Object.entries(all).map(([k, v]) => `export ${k}='${v.replace(/'/g, `'\\''`)}'`);
+  writeFileSync(envScript(home), `# Written by agent-cloud: your secrets, for Claude Code. Load it from your shell profile.\n${sh.join("\n")}\n`, { mode: 0o600 });
+  chmodSync(envScript(home), 0o600);
+}
+
+export const envScript = (home = os.homedir()) => path.join(pcDir(home), "env.sh");
 
 function windowsUserEnv(): Record<string, string> {
   if (process.platform !== "win32") return {};
