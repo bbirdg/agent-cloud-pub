@@ -1,0 +1,58 @@
+{
+  "name": "agent-cloud",
+  "version": "0.1.0",
+  "description": "One home for your AI agent setup: a private shared memory server on your own Cloudflare account, plus your rules, skills, subagents and MCP servers synced into Claude Code, Codex, Antigravity, Cursor and the Claude app on every PC.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "agent-cloud": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/",
+    "server/src/",
+    "server/migrations/",
+    "templates/",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "keywords": [
+    "mcp",
+    "memory",
+    "claude-code",
+    "codex",
+    "cursor",
+    "antigravity",
+    "agents",
+    "cloudflare-workers"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p server/tsconfig.json && tsc -p server/test/tsconfig.json",
+    "test": "vitest run --config vitest.config.ts",
+    "test:server": "vitest run --config server/vitest.config.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.4.0",
+    "@modelcontextprotocol/ext-apps": "2.1.0",
+    "@modelcontextprotocol/server": "2.4.0",
+    "agents": "0.34.1",
+    "wrangler": "^4.168.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.9.2",
+    "@cloudflare/workers-types": "^5.20261125.1",
+    "@modelcontextprotocol/client": "2.4.0",
+    "@types/node": "^26.6.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "workerd": true,
+    "core-js-pure": false
+  }
+}

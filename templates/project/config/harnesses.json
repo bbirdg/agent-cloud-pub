@@ -1,0 +1,21 @@
+{
+  "$comment": "Which agents `npx agent-cloud sync` writes to. Turn one off with enabled: false. A harness that reads an AGENTS.md-style rules file and an Agent Skills folder can be added with type generic-agents-md (see opencode).",
+  "primary": "claude-code",
+  "harnesses": {
+    "claude-code": { "enabled": true },
+    "codex": { "enabled": true },
+    "antigravity": { "enabled": true },
+    "cursor": { "enabled": true },
+    "claude-desktop": {
+      "enabled": true,
+      "$comment": "The Claude desktop app: only MCP servers (its Code tab is Claude Code). Every chat starts every server listed here, so keep it to the ones useful in chat. Written only while the app is closed.",
+      "mcp": ["context7"]
+    },
+    "opencode": {
+      "enabled": false,
+      "type": "generic-agents-md",
+      "rulesFile": "~/.config/opencode/AGENTS.md",
+      "skillsDir": "~/.config/opencode/skills"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$comment": "Skills installed from public GitHub repos into ~/.claude/skills and kept current by `npx agent-cloud skills`. auto: true updates them on their own once a day (only after you've reviewed one update); other sources wait for `npx agent-cloud skills update --yes`. A skill you edit by hand is never overwritten. Add a skill with its folder name; 'prefix' is the folder that holds a repo's skills (default skills/). New PC: `npx agent-cloud skills update --yes --install`.",
+  "sources": [
+    {
+      "repo": "anthropics/skills",
+      "ref": "main",
+      "auto": false,
+      "skills": ["skill-creator"]
+    }
+  ],
+  "ignore": [],
+  "tools": { "list": [] }
+}

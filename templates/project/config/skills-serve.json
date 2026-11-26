@@ -1,0 +1,4 @@
+{
+  "$comment": "How your skills in config/skills are served over MCP by your memory server (claude.ai and other remote clients); agents on your PCs always get the full folders. The served copy must stay under 100 KB per file and 400 KB per skill. Per skill: 'exclude' drops folders (trailing /) or files, 'note' is added to the top of the served SKILL.md. Example: \"my-skill\": { \"exclude\": [\"engine/\"], \"note\": \"Served without its local engine.\" }",
+  "skills": {}
+}

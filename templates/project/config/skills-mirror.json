@@ -1,0 +1,5 @@
+{
+  "$comment": "Skills installed on this PC (Claude Code's skills folder, ~/.agents/skills) are copied to agents that can't read those folders: Antigravity (into its skills folder) and Codex (into ~/.codex/skills, only skills not already in ~/.agents/skills). Your own skills belong in config/skills. Earlier sources win when two have the same skill. Linked folders are never mirrored. A '*' path segment picks the most recently updated match.",
+  "to": ["antigravity", "codex"],
+  "sources": [{ "dir": "~/.claude/skills" }, { "dir": "~/.agents/skills" }]
+}

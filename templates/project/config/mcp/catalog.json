@@ -1,0 +1,21 @@
+{
+  "$comment": "Every MCP server your agents get. 'default' goes to every agent; a key named after an agent (claude-code, codex, antigravity, cursor, claude-desktop) overrides it, and false leaves that agent out. Never put a secret here: write ${env:NAME} and save the value on each PC with `npx agent-cloud secret set NAME`. ${home} is the user's folder and ${memoryUrl} your memory server, so the same file works on every PC. A server whose program isn't installed on a PC is left out there, with a warning.",
+  "leaveAlone": [],
+  "servers": {
+    "agent-memory": {
+      "default": {
+        "type": "http",
+        "url": "${memoryUrl}/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:AGENT_MEMORY_TOKEN}"
+        }
+      }
+    },
+    "context7": {
+      "default": {
+        "type": "http",
+        "url": "https://mcp.context7.com/mcp"
+      }
+    }
+  }
+}
