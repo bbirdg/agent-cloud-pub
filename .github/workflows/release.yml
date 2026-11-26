@@ -22,6 +22,8 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      # `npm stage` and trusted publishing need a newer npm than the one bundled with Node.
+      - run: npm install -g npm@11.19.1
       - run: npm ci --no-audit --no-fund
       - run: npm run typecheck && npm test && npm run test:server
       - name: The tag matches package.json

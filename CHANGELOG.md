@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- The first release built and signed by GitHub Actions: npm shows its provenance (which commit and workflow made it).
+  Releases are now staged by the workflow and go live only after a maintainer approves them with a security key.
+- No changes to the CLI or the memory server.
+
 ## 0.1.0
 
 First public version, under the GNU AGPL-3.0.
