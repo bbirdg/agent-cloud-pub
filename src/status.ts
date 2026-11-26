@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { envScript, findProject, packageVersion, pcDir, readPcState, readSettings, secretValues } from "./project.ts";
+import { envScript, findProject, PACKAGE_NAME, packageVersion, pcDir, readPcState, readSettings, secretValues } from "./project.ts";
 import type { Catalog } from "./sync/mcp.ts";
 
 export async function main(args: string[]): Promise<void> {
@@ -14,7 +14,7 @@ export async function main(args: string[]): Promise<void> {
 
   const pc = readPcState();
   const project = findProject(value("--project"));
-  if (!project) return warn("no agent-cloud folder found: run this inside it, or create one with `npx agent-cloud init <folder>`");
+  if (!project) return warn(`no agent-cloud folder found: run this inside it, or create one with \`npx ${PACKAGE_NAME} init <folder>\``);
   ok(`folder: ${project}`);
 
   const s = readSettings(project, { allowNoUrl: true });

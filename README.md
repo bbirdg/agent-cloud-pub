@@ -19,7 +19,7 @@ your rules, skills, subagents and MCP servers written into every agent on every 
 You need Node.js 22.12 or newer, git, a free Cloudflare account and a GitHub account.
 
 ```sh
-npx agent-cloud init my-agent-cloud     # your folder: example rules, a skill, a subagent, MCP servers
+npx @bbirdg/agent-cloud init my-agent-cloud   # your folder: example rules, a skill, a subagent, MCP servers
 cd my-agent-cloud
 npx agent-cloud setup                   # creates and deploys your memory server, connects this PC
 npx agent-cloud sync                    # preview what every agent gets
@@ -98,7 +98,7 @@ points these out.
 
 ## Updating
 
-`npm update agent-cloud` in your folder, then `npx agent-cloud sync` to preview what changes and
+`npm update @bbirdg/agent-cloud` in your folder, then `npx agent-cloud sync` to preview what changes and
 `npx agent-cloud deploy` for the memory server. The session hook tells you when an update waits.
 
 ## License

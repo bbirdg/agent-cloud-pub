@@ -17,7 +17,7 @@ import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node
 import os from "node:os";
 import path from "node:path";
 import { pointerMd, SKILL_MD } from "../../server/src/memory-text.ts";
-import { findProject, packageVersion, readPcState, readSettings, requireProject, secretValues, writePcState } from "../project.ts";
+import { findProject, PACKAGE_NAME, packageVersion, readPcState, readSettings, requireProject, secretValues, writePcState } from "../project.ts";
 import { antigravity, claudeCode, claudeDesktop, codex, type Content, cursor, folderDigest, genericAgentsMd, readFolder, rulesFile, type Skill, SKILL_DIRS, writeFolder } from "./adapters.ts";
 import { expandHome, hash, Sync, type Entry } from "./core.ts";
 import { desktopPids, startDesktopWaiter } from "./desktop.ts";
@@ -257,7 +257,7 @@ const firstLine = (e: unknown) => (e instanceof Error ? e.message : String(e)).s
 
 /** The session hook command: this installed package's CLI, run by `node` from the agent's own PATH. */
 export function hookCommand(project: string): string {
-  const cli = path.join(project, "node_modules", "agent-cloud", "dist", "src", "cli.js");
+  const cli = path.join(project, "node_modules", ...PACKAGE_NAME.split("/"), "dist", "src", "cli.js");
   return `node "${cli}" hook`;
 }
 

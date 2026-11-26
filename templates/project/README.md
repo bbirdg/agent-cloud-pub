@@ -2,7 +2,7 @@
 
 My AI agent setup, in one place: the rules, skills, subagents and MCP servers every agent gets (Claude Code, Codex,
 Antigravity, Cursor, the Claude app), on every PC, plus the settings of my private memory server.
-Made with [agent-cloud](https://www.npmjs.com/package/agent-cloud).
+Made with [agent-cloud](https://www.npmjs.com/package/@bbirdg/agent-cloud).
 
 | What | Where |
 |---|---|
@@ -23,7 +23,7 @@ npx agent-cloud deploy               # after changing config/skills: serve them 
 npx agent-cloud skills update --yes  # update the installed skills
 npx agent-cloud status               # what's set up on this PC
 npx agent-cloud off all | on         # unplug this PC and back (e.g. to test an agent without my setup)
-npm update agent-cloud               # a new agent-cloud version; then preview with `npx agent-cloud sync`
+npm update @bbirdg/agent-cloud       # a new agent-cloud version; then preview with `npx agent-cloud sync`
 ```
 
 ## Another PC

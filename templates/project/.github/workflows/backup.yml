@@ -44,7 +44,7 @@ jobs:
         env:
           AGENT_MEMORY_URL: ${{ vars.AGENT_MEMORY_URL }}
           AGENT_MEMORY_TOKEN: ${{ secrets.AGENT_MEMORY_TOKEN }}
-        run: node ../code/node_modules/agent-cloud/dist/src/cli.js backup pull
+        run: node ../code/node_modules/@bbirdg/agent-cloud/dist/src/cli.js backup pull
 
       - name: Commit changes
         working-directory: backup
@@ -66,4 +66,4 @@ jobs:
           AGENT_MEMORY_URL: ${{ vars.AGENT_MEMORY_URL }}
           AGENT_MEMORY_TOKEN: ${{ secrets.AGENT_MEMORY_TOKEN }}
           JOB_STATUS: ${{ job.status }}
-        run: node ../code/node_modules/agent-cloud/dist/src/cli.js backup report
+        run: node ../code/node_modules/@bbirdg/agent-cloud/dist/src/cli.js backup report

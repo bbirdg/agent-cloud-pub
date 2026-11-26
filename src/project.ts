@@ -12,6 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const SETTINGS_FILE = "agent-cloud.json";
+/** The npm package; its command is `agent-cloud`. */
+export const PACKAGE_NAME = "@bbirdg/agent-cloud";
 
 /** The user's agent-cloud.json. */
 export interface Settings {
@@ -36,7 +38,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const packageRoot: string = (() => {
   for (let dir = here; ; dir = path.dirname(dir)) {
     const pkg = path.join(dir, "package.json");
-    if (existsSync(pkg) && (JSON.parse(readFileSync(pkg, "utf8")) as { name?: string }).name === "agent-cloud") return dir;
+    if (existsSync(pkg) && (JSON.parse(readFileSync(pkg, "utf8")) as { name?: string }).name === PACKAGE_NAME) return dir;
     if (path.dirname(dir) === dir) throw new Error("agent-cloud: can't find its own package folder");
   }
 })();
@@ -90,7 +92,7 @@ export function findProject(explicit?: string, home = os.homedir()): string | nu
 
 export function requireProject(explicit?: string, home = os.homedir()): string {
   const dir = findProject(explicit, home);
-  if (!dir) throw new Error(`No agent-cloud project found. Run this inside your agent-cloud folder (the one with ${SETTINGS_FILE}), or create one with: npx agent-cloud init <folder>`);
+  if (!dir) throw new Error(`No agent-cloud project found. Run this inside your agent-cloud folder (the one with ${SETTINGS_FILE}), or create one with: npx ${PACKAGE_NAME} init <folder>`);
   return dir;
 }
 

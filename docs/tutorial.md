@@ -16,9 +16,11 @@ all share, and one folder that sets up every agent the same way on every PC. Abo
 ## 1. Create your folder
 
 ```sh
-npx agent-cloud init my-agent-cloud
+npx @bbirdg/agent-cloud init my-agent-cloud
 cd my-agent-cloud
 ```
+
+From here on, inside that folder, the command is just `npx agent-cloud`.
 
 This makes a folder with example rules, an example skill, a reviewer subagent, two MCP servers (your memory and
 Context7's docs search) and the nightly backup workflow. It's yours: edit anything.
@@ -112,4 +114,4 @@ brings it back exactly as it was.
   which.
 - **"conflict" in a sync:** you edited a file agent-cloud wrote. Move the change into your folder, delete the file,
   and sync again.
-- **After `npm update agent-cloud`:** run `npx agent-cloud sync` and `npx agent-cloud deploy`.
+- **After `npm update @bbirdg/agent-cloud`:** run `npx agent-cloud sync` and `npx agent-cloud deploy`.

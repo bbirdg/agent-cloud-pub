@@ -250,9 +250,9 @@ export function canonical(value: unknown): string {
 
 function hookEntry(settingsFile: string, command: string): Entry {
   const load = () => (existsSync(settingsFile) ? (JSON.parse(readFileSync(settingsFile, "utf8")) as Record<string, any>) : {});
-  // Ours whichever project folder it points to: this package's installed CLI (`.../node_modules/agent-cloud/dist/src/cli.js"
-  // hook`), exactly this run's command, or the hook-context.mjs of versions before the package. Nothing else.
-  const mine = /hook-context\.mjs"?\s*$|[\\/]node_modules[\\/]agent-cloud[\\/]dist[\\/]src[\\/]cli\.js"?\s+hook\s*$/;
+  // Ours whichever project folder it points to: this package's installed CLI (`.../node_modules/@bbirdg/agent-cloud/dist/
+  // src/cli.js" hook`), exactly this run's command, or the hook-context.mjs of versions before the package. Nothing else.
+  const mine = /hook-context\.mjs"?\s*$|[\\/]node_modules[\\/]@bbirdg[\\/]agent-cloud[\\/]dist[\\/]src[\\/]cli\.js"?\s+hook\s*$/;
   const ours = (g: any) => (g?.hooks ?? []).some((h: any) => typeof h.command === "string" && (h.command === command || mine.test(h.command)));
   return {
     id: "claude-code:hook:session-start",

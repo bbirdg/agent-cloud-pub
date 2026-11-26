@@ -1,5 +1,5 @@
 /**
- * `npx agent-cloud init <folder>`: creates your agent-cloud folder from the template (example rules, a skill, a
+ * `npx @bbirdg/agent-cloud init <folder>`: creates your agent-cloud folder from the template (example rules, a skill, a
  * subagent, MCP servers, the nightly backup workflow), with agent-cloud installed in it, as a new git repo.
  *   options: --worker <name> (default agent-memory), --repo <owner/name> (its private GitHub repo, for the backup),
  *            --no-install (skip `npm install`)
@@ -8,12 +8,12 @@ import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { npmRun } from "./npm.ts";
-import { packageRoot, packageVersion, SETTINGS_FILE, type Settings } from "./project.ts";
+import { PACKAGE_NAME, packageRoot, packageVersion, SETTINGS_FILE, type Settings } from "./project.ts";
 
 export async function main(args: string[]): Promise<void> {
   const value = (n: string) => (args.includes(n) ? args[args.indexOf(n) + 1] : undefined);
   const target = args.find((a, i) => !a.startsWith("--") && !args[i - 1]?.startsWith("--"));
-  if (!target) throw new Error("Use: npx agent-cloud init <folder>");
+  if (!target) throw new Error(`Use: npx ${PACKAGE_NAME} init <folder>`);
   const dir = path.resolve(target);
   if (existsSync(dir) && readdirSync(dir).length) throw new Error(`${dir} isn't empty; pick a new folder.`);
 
@@ -35,7 +35,7 @@ export async function main(args: string[]): Promise<void> {
         name: path.basename(dir).toLowerCase().replace(/[^a-z0-9-]+/g, "-") || "my-agent-cloud",
         private: true,
         type: "module",
-        devDependencies: { "agent-cloud": `^${packageVersion}` },
+        devDependencies: { [PACKAGE_NAME]: `^${packageVersion}` },
         // npm 11 runs install scripts only for approved packages: esbuild and workerd ship Wrangler's binaries.
         allowScripts: { esbuild: true, workerd: true, "core-js-pure": false },
       },

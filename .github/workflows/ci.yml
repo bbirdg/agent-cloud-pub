@@ -55,10 +55,10 @@ jobs:
       - name: Create a project from the tarball and bundle the memory server
         run: |
           set -e
-          TARBALL="$PWD/$(ls agent-cloud-*.tgz)"
+          TARBALL="$PWD/$(ls bbirdg-agent-cloud-*.tgz)"
           cd "$RUNNER_TEMP"
           mkdir tool && cd tool && npm init -y >/dev/null && npm install --no-audit --no-fund "$TARBALL" && cd ..
-          node tool/node_modules/agent-cloud/dist/src/cli.js init my-agent-cloud --no-install
+          node tool/node_modules/@bbirdg/agent-cloud/dist/src/cli.js init my-agent-cloud --no-install
           cd my-agent-cloud
           npm install --no-audit --no-fund "$TARBALL"
           node -e "const f='agent-cloud.json',s=require('./'+f);s.memory.url='https://memory.example.com';s.memory.d1.id='d1';s.memory.kv.id='kv';require('fs').writeFileSync(f,JSON.stringify(s))"
