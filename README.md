@@ -29,7 +29,7 @@ npx agent-cloud sync --apply --adopt    # write it (existing files are backed up
 Then put the folder in a **private** GitHub repo (it holds your rules; its `memory-backup` branch will hold every
 note) and run `npx agent-cloud setup` once more to switch on the nightly backup.
 
-New to this? [The step-by-step tutorial](docs/tutorial.md) walks through every click.
+New to this? [The step-by-step tutorial](https://github.com/bbirdg/agent-cloud-pub/blob/main/docs/tutorial.md) walks through every click.
 
 ## What goes where
 
