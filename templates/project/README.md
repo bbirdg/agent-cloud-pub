@@ -23,7 +23,7 @@ npx agent-cloud deploy               # after changing config/skills: serve them 
 npx agent-cloud skills update --yes  # update the installed skills
 npx agent-cloud status               # what's set up on this PC
 npx agent-cloud off all | on         # unplug this PC and back (e.g. to test an agent without my setup)
-npm update @bbirdg/agent-cloud       # a new agent-cloud version; then preview with `npx agent-cloud sync`
+npm i -D @bbirdg/agent-cloud@latest  # a new agent-cloud version; then preview with `npx agent-cloud sync`
 ```
 
 ## Another PC

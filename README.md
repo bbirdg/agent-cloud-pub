@@ -100,7 +100,7 @@ points these out.
 
 ## Updating
 
-`npm update @bbirdg/agent-cloud` in your folder, then `npx agent-cloud sync` to preview what changes and
+`npm i -D @bbirdg/agent-cloud@latest` in your folder, then `npx agent-cloud sync` to preview what changes and
 `npx agent-cloud deploy` for the memory server. The session hook tells you when an update waits.
 
 ## License

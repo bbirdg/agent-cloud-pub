@@ -114,4 +114,4 @@ brings it back exactly as it was.
   which.
 - **"conflict" in a sync:** you edited a file agent-cloud wrote. Move the change into your folder, delete the file,
   and sync again.
-- **After `npm update @bbirdg/agent-cloud`:** run `npx agent-cloud sync` and `npx agent-cloud deploy`.
+- **After `npm i -D @bbirdg/agent-cloud@latest`:** run `npx agent-cloud sync` and `npx agent-cloud deploy`.
