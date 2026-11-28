@@ -520,6 +520,12 @@ export async function saveNote(db: D1Database, actor: Actor, input: SaveInput): 
     const id = input.id.trim();
     const existing = await getNote(db, projectKey, id);
     if (existing) {
+      // A note in the bin is erased when the bin empties; saving over it would quietly lose the new text with it.
+      if (existing.status === "deleted") {
+        throw new MemoryError(
+          `Note ${projectKey}/${id} is in the bin. If the user wants it back, restore it first (memory_set_status action=restore), then update it.`,
+        );
+      }
       if (input.expectedVersion === undefined) {
         throw new MemoryError(
           `Note ${projectKey}/${id} already exists (version ${existing.version}). Read it, then pass expected_version=${existing.version} to update it.`,
@@ -701,6 +707,43 @@ export async function purgeNote(db: D1Database, actor: Actor, note: Pick<Note, "
   if ((results[0]?.meta.changes ?? 0) === 0) {
     throw new MemoryError(`${project}/${id} was restored or changed in the meantime; nothing was erased.`);
   }
+}
+
+/** Who the change log names for notes the bin erased on its own. */
+export const BIN_ACTOR: Actor = { kind: "device", name: "bin (emptied automatically)" };
+
+/**
+ * Erases every note that has been in the bin longer than `days` (counted from when it was deleted: a deleted note's
+ * updated_at), the same way memory_purge does. Returns the references erased. At most `limit` per run, the rest on
+ * the next run: each erase is one D1 query, and the Workers Free plan allows 50 per invocation.
+ */
+export async function emptyBin(db: D1Database, days: number, now = Date.now(), limit = 40): Promise<string[]> {
+  if (!(days > 0)) return [];
+  return eraseFromBin(db, await binExpired(db, days, now, limit));
+}
+
+/** Notes deleted more than `days` days before `now`, oldest first. */
+export async function binExpired(db: D1Database, days: number, now: number, limit: number): Promise<Pick<Note, "project" | "id" | "version">[]> {
+  const cutoff = new Date(now - days * 86_400_000).toISOString();
+  const old = await db
+    .prepare("SELECT project, id, version FROM notes WHERE status = 'deleted' AND updated_at < ? ORDER BY updated_at LIMIT ?")
+    .bind(cutoff, limit)
+    .all<Pick<Note, "project" | "id" | "version">>();
+  return old.results;
+}
+
+/** Erases these binned notes; one restored or changed since it was listed (another version) is skipped. */
+export async function eraseFromBin(db: D1Database, notes: Pick<Note, "project" | "id" | "version">[]): Promise<string[]> {
+  const erased: string[] = [];
+  for (const note of notes) {
+    try {
+      await purgeNote(db, BIN_ACTOR, note);
+      erased.push(`${note.project}/${note.id}`);
+    } catch (error) {
+      if (!(error instanceof MemoryError)) throw error; // restored or changed meanwhile: it stays
+    }
+  }
+  return erased;
 }
 
 // ---------- audit & meta ----------

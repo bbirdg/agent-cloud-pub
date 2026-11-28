@@ -27,6 +27,8 @@ export interface Settings {
     d1: { name: string; id: string };
     kv: { id: string };
     compatibilityDate?: string;
+    /** Days a deleted note stays in the bin before it's erased for good (default 14; 0 = never). */
+    binDays?: number;
   };
   /** owner/name of the GitHub repo holding this project; its memory-backup branch gets the nightly backup. */
   repo?: string;

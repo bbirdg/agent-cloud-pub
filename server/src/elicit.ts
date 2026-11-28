@@ -17,8 +17,9 @@ import { MemoryError } from "./memory";
 /**
  * Asking the user to confirm an action mid-call, over the 2026-07-28 multi-round-trip flow: the tool returns
  * `input_required` with a form, the client shows it and calls the tool again with the answer. Clients that cannot
- * show a form (2025-era clients, which this stateless Worker cannot push requests to, and clients that did not
- * declare elicitation) get a plain-text request to confirm in chat and call again with confirm=true.
+ * show a form (2025-era clients, which this stateless Worker cannot push requests to, clients that did not
+ * declare elicitation, and agents whose app declines forms unseen) get a plain-text request to confirm in chat and
+ * call again with confirm=true.
  */
 
 /** What the first round asked about; echoed back signed, so the answer can only confirm that exact action. */
@@ -68,8 +69,10 @@ const say = (text: string): CallToolResult => ({ content: [{ type: "text", text 
 
 /**
  * Asks the user to confirm `subject` for `tool`, or reads their answer on the retry.
- * `confirmArg` (the tool's confirm=true argument) only counts when the client cannot show a form, so a model can
- * never skip a form the user would have seen.
+ * `confirmArg` (the tool's confirm=true argument) only counts on the no-form route: when the client cannot show a
+ * form, or the agent says (`noForm`) that its app declines forms unseen. The server can't tell that apart from a
+ * real decline, so a tool offering `noForm` must accept the no-form route's risk and limit it with
+ * `refuseWithoutForm` (memory_purge: only notes 24 hours in the bin, which the bin erases on its own later anyway).
  */
 export async function confirmAction(
   ctx: ServerContext,
@@ -84,9 +87,16 @@ export async function confirmAction(
      * with it (e.g. "only after 24 hours in the bin") instead of trusting confirm=true.
      */
     refuseWithoutForm?: () => string | null;
+    /**
+     * The agent says its app can't show forms although it declared them (some apps decline every form unseen).
+     * It gets the no-form route, with the same limits as a client that declared none.
+     */
+    noForm?: boolean;
+    /** Added to "Cancelled" when a form comes back declined or dismissed (e.g. how to retry without a form). */
+    declinedHint?: string;
   },
 ): Promise<Confirmation> {
-  if (!canElicit(ctx)) {
+  if (!canElicit(ctx) || input.noForm === true) {
     const refusal = input.refuseWithoutForm?.();
     if (refusal) return { confirmed: false, reply: say(refusal) };
     if (input.confirmArg === true) return { confirmed: true };
@@ -115,7 +125,8 @@ export async function confirmAction(
   const view = inputResponse(ctx.mcpReq.inputResponses, "confirm");
   if (view.kind === "missing") return ask();
   if (view.kind === "elicit" && view.action !== "accept") {
-    return { confirmed: false, reply: say(`Cancelled: the user ${view.action === "decline" ? "declined" : "dismissed the question"}. Nothing was changed.`) };
+    const hint = input.declinedHint ? ` ${input.declinedHint}` : "";
+    return { confirmed: false, reply: say(`Cancelled: the user ${view.action === "decline" ? "declined" : "dismissed the question"}. Nothing was changed.${hint}`) };
   }
   const answer = acceptedContent(ctx.mcpReq.inputResponses, "confirm", confirmSchema);
   if (answer === undefined) return ask();

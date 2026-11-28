@@ -1,7 +1,8 @@
 /**
  * Restores memory from a checkout of the `memory-backup` branch into a D1 database.
  * Keeps every note's status (active / muted / deleted), reason, dates, version and author, and every
- * project's title and folder links. Edit history (note_versions) is not in the backup and starts fresh.
+ * project's title and folder links; a note restored into the bin gets the restore time as its date, so the bin
+ * gives it its full time again. Edit history (note_versions) is not in the backup and starts fresh.
  *
  *   agent-cloud restore --from <backup clone> --local [--persist-to <dir>]   # test into a local database
  *   agent-cloud restore --from <backup clone> --remote --force               # real restore (empty database only)
@@ -12,7 +13,7 @@ import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "no
 import path from "node:path";
 import { extractLinks, NOTE_TYPES, parseNoteMarkdown } from "../server/src/note-format.ts";
 import { readSettings, requireProject } from "./project.ts";
-import { buildDir, wrangler, writeWranglerConfig } from "./wrangler.ts";
+import { binDays, buildDir, wrangler, writeWranglerConfig } from "./wrangler.ts";
 
 const args = process.argv.slice(2);
 const arg = (name: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
@@ -53,7 +54,11 @@ for (const [key, p] of Object.entries(projects)) {
 }
 
 let count = 0;
+let binned = 0;
 const problems: string[] = [];
+// Notes restored into the bin get a fresh bin clock: the bin empties itself, and a restore must leave the user
+// time to bring them back rather than erase them at the next daily run.
+const restoredAt = new Date().toISOString();
 for (const project of readdirSync(notesDir)) {
   for (const file of readdirSync(path.join(notesDir, project)).filter((f) => f.endsWith(".md") && f !== "MEMORY.md")) {
     try {
@@ -64,9 +69,10 @@ for (const project of readdirSync(notesDir)) {
         `INSERT INTO notes (project, id, name, description, type, body, links, status, status_reason, version, created_at, updated_at, updated_by)
          VALUES (${[project, file.slice(0, -3), n.name, n.description, n.type, n.body, JSON.stringify(extractLinks(n.body)), status, n.statusReason ?? null]
            .map(q)
-           .join(", ")}, ${q(n.version ?? 1)}, ${q(n.createdAt ?? n.updatedAt ?? new Date().toISOString())}, ${q(n.updatedAt ?? new Date().toISOString())}, ${q(n.updatedBy ?? "restore")});`,
+           .join(", ")}, ${q(n.version ?? 1)}, ${q(n.createdAt ?? n.updatedAt ?? new Date().toISOString())}, ${q(status === "deleted" ? restoredAt : (n.updatedAt ?? restoredAt))}, ${q(n.updatedBy ?? "restore")});`,
       );
       count++;
+      if (status === "deleted") binned++;
     } catch (error) {
       problems.push(`${project}/${file}: ${(error as Error).message}`);
     }
@@ -86,3 +92,11 @@ try {
   rmSync(sqlFile, { force: true });
 }
 console.log(`Restored ${count} notes in ${Object.keys(projects).length} projects.`);
+if (binned) {
+  const days = binDays(settings);
+  console.log(
+    days > 0
+      ? `${binned} of them are in the bin, which empties itself after ${days} days: restore any you want back before then.`
+      : `${binned} of them are in the bin.`,
+  );
+}

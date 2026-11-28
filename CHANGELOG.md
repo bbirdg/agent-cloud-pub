@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0
+
+- The bin empties itself: once a day, notes deleted more than 14 days ago are erased for good. Change it with
+  `memory.binDays` in `agent-cloud.json` (0 = never), then `agent-cloud deploy`.
+- `memory_purge` works in apps that declare confirmation forms but can't show them (they decline every form unseen):
+  the agent confirms with you in chat and calls again with `no_form`, for notes in the bin 24 hours or more.
+- `memory_save` won't save over a note in the bin (its new text would be erased with it): restore it first.
+- `agent-cloud restore` gives notes restored into the bin their full bin time again.
+- Run `agent-cloud sync` (the memory rules mention the bin's time limit) and `agent-cloud deploy` after updating. On
+  the next daily run after deploying, notes already in the bin for more than 14 days are erased.
+
 ## 0.1.3
 
 - Fix: `agent-cloud off memory` now removes the memory skill from Antigravity too. It used to come back as a copy of

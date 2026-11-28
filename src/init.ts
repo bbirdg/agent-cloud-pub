@@ -23,8 +23,8 @@ export async function main(args: string[]): Promise<void> {
 
   const worker = value("--worker") ?? "agent-memory";
   const settings: Settings & { $comment: string } = {
-    $comment: "Your memory server. `npx agent-cloud setup` fills in the ids and the address. For a custom domain (a domain on your Cloudflare account), set memory.domain, or run `setup --domain <name>`. Set repo (owner/name of this folder's private GitHub repo) for the nightly backup.",
-    memory: { url: "", worker, domain: null, d1: { name: worker, id: "" }, kv: { id: "" } },
+    $comment: "Your memory server. `npx agent-cloud setup` fills in the ids and the address. For a custom domain (a domain on your Cloudflare account), set memory.domain, or run `setup --domain <name>`. Set repo (owner/name of this folder's private GitHub repo) for the nightly backup. binDays: how long a deleted note stays in the bin before it's erased for good (0 = never).",
+    memory: { url: "", worker, domain: null, d1: { name: worker, id: "" }, kv: { id: "" }, binDays: 14 },
     ...(value("--repo") ? { repo: value("--repo") } : {}),
   };
   writeFileSync(path.join(dir, SETTINGS_FILE), JSON.stringify(settings, null, 2) + "\n");

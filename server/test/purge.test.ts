@@ -1,6 +1,9 @@
+import { createExecutionContext, createScheduledController, waitOnExecutionContext } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { stateCodec } from "../src/elicit";
+import worker, { binDays } from "../src/index";
+import { BIN_ACTOR, binExpired, emptyBin, eraseFromBin } from "../src/memory";
 import { TOKEN, addDevice, modernClient, modernRpc, rpc } from "./helpers";
 
 const ELICIT = { elicitation: { form: {} } };
@@ -176,6 +179,114 @@ describe("memory_purge fallback (no elicitation)", () => {
     expect(textOf(result)).toContain("confirm=true");
     expect(await counts()).toEqual({ notes: 1, versions: 1 });
     await client.close();
+  });
+});
+
+describe("memory_purge with no_form (an app that declares forms but declines them unseen)", () => {
+  it("says how to retry without a form when the form comes back declined or dismissed", async () => {
+    await seed();
+    for (const answer of [{ action: "decline" }, { action: "cancel" }] as const) {
+      const client = await modernClient(TOKEN, { onElicit: () => answer });
+      const result = await client.callTool({ name: "memory_purge", arguments: { id: "_global/old-key" } });
+      expect(textOf(result)).toMatch(/Cancelled[\s\S]*no_form=true and confirm=true/);
+      await client.close();
+    }
+    expect(await counts()).toEqual({ notes: 1, versions: 1 });
+  });
+
+  it("a clear 'no' in the form gets no retry hint", async () => {
+    await seed();
+    const client = await modernClient(TOKEN, { onElicit: () => ({ action: "accept", content: { confirm: false } }) });
+    const result = await client.callTool({ name: "memory_purge", arguments: { id: "_global/old-key" } });
+    expect(textOf(result)).not.toContain("no_form");
+    await client.close();
+  });
+
+  it("asks in chat, then erases with confirm=true, without ever showing a form", async () => {
+    await seed();
+    const asked: string[] = [];
+    const client = await modernClient(TOKEN, { onElicit: (m) => (asked.push(m), { action: "decline" }) });
+    const first = await client.callTool({ name: "memory_purge", arguments: { id: "_global/old-key", no_form: true } });
+    expect(textOf(first)).toContain("confirm=true");
+    expect(await counts()).toEqual({ notes: 1, versions: 1 });
+    const second = await client.callTool({ name: "memory_purge", arguments: { id: "_global/old-key", no_form: true, confirm: true } });
+    expect(textOf(second)).toContain("Erased");
+    expect(asked).toEqual([]);
+    expect(await counts()).toEqual({ notes: 0, versions: 0 });
+    await client.close();
+  });
+
+  it("keeps the 24-hour rule: a note deleted an hour ago is refused even with no_form and confirm=true", async () => {
+    await seed("deleted", 1);
+    const client = await modernClient(TOKEN, { onElicit: () => ({ action: "decline" }) });
+    const result = await client.callTool({ name: "memory_purge", arguments: { id: "_global/old-key", no_form: true, confirm: true } });
+    expect(textOf(result)).toContain("24 hours");
+    expect(await counts()).toEqual({ notes: 1, versions: 1 });
+    await client.close();
+  });
+});
+
+describe("the bin empties itself", () => {
+  const at = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+  async function note(id: string, status: "active" | "muted" | "deleted", daysAgo: number) {
+    await env.DB.prepare(
+      "INSERT INTO notes (project, id, name, description, type, body, status, version, updated_at) VALUES ('_global', ?, ?, 'd', 'reference', 'text', ?, 1, ?)",
+    )
+      .bind(id, id, status, at(daysAgo))
+      .run();
+  }
+  const ids = async () =>
+    (await env.DB.prepare("SELECT id FROM notes WHERE project = '_global' AND id LIKE 'bin-%' ORDER BY id").all<{ id: string }>()).results.map((r) => r.id);
+
+  it("erases only notes deleted longer ago than BIN_DAYS, through the daily cron handler", async () => {
+    await note("bin-old", "deleted", 10);
+    await note("bin-recent", "deleted", 3);
+    await note("bin-old-active", "active", 400);
+    await note("bin-old-muted", "muted", 400);
+    const ctx = createExecutionContext();
+    await worker.scheduled(createScheduledController(), { ...env, BIN_DAYS: "5" }, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(await ids()).toEqual(["bin-old-active", "bin-old-muted", "bin-recent"]);
+    const log = await env.DB.prepare("SELECT actor, action FROM audit WHERE note_id = 'bin-old'").all<{ actor: string; action: string }>();
+    expect(log.results).toEqual([{ actor: BIN_ACTOR.name, action: "purge" }]);
+  });
+
+  it("is 14 days when BIN_DAYS is unset; 0 or any value that isn't whole days never empties it", async () => {
+    expect(binDays({})).toBe(14);
+    expect(binDays({ BIN_DAYS: "7" })).toBe(7);
+    for (const bad of ["0", "nonsense", "-1", "0.5", "1e-6", "never"]) expect(binDays({ BIN_DAYS: bad }), bad).toBe(0);
+    await note("bin-ancient", "deleted", 1000);
+    expect(await emptyBin(env.DB, binDays({ BIN_DAYS: "0.5" }))).toEqual([]);
+    expect(await ids()).toEqual(["bin-ancient"]);
+  });
+
+  it("erases at most `limit` per run; the rest go on the next run", async () => {
+    for (const n of ["bin-a", "bin-b", "bin-c"]) await note(n, "deleted", 30);
+    expect(await emptyBin(env.DB, 14, Date.now(), 2)).toHaveLength(2);
+    expect(await ids()).toHaveLength(1);
+    expect(await emptyBin(env.DB, 14, Date.now(), 2)).toHaveLength(1);
+    expect(await ids()).toEqual([]);
+  });
+
+  it("skips a note restored after it was listed", async () => {
+    await note("bin-restored", "deleted", 30);
+    const listed = await binExpired(env.DB, 14, Date.now(), 40);
+    expect(listed.map((n) => n.id)).toEqual(["bin-restored"]);
+    await env.DB.prepare("UPDATE notes SET status = 'active', version = 2 WHERE id = 'bin-restored'").run();
+    expect(await eraseFromBin(env.DB, listed)).toEqual([]);
+    expect(await ids()).toEqual(["bin-restored"]);
+  });
+
+  it("won't save over a note in the bin (its new text would be erased with it)", async () => {
+    await note("bin-edit", "deleted", 1);
+    const saved = await rpc(TOKEN, "tools/call", {
+      name: "memory_save",
+      arguments: { project: "_global", id: "bin-edit", expected_version: 1, name: "New", description: "d", type: "reference", body: "new text" },
+    });
+    expect(saved.json.result.isError).toBe(true);
+    expect(saved.json.result.content[0].text).toContain("in the bin");
+    const row = await env.DB.prepare("SELECT body, status FROM notes WHERE id = 'bin-edit'").first<{ body: string; status: string }>();
+    expect(row).toEqual({ body: "text", status: "deleted" });
   });
 });
 

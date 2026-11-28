@@ -82,6 +82,14 @@ describe("deploy pieces", () => {
     const custom = jsonc(writeWranglerConfig(w.project, { ...settings, memory: { ...settings.memory, domain: "memory.example.com" } }));
     expect(custom.workers_dev).toBe(false);
     expect(custom.routes).toEqual([{ pattern: "memory.example.com", custom_domain: true }]);
+
+    // The bin: 14 days and a daily run by default; binDays 0 = no run; a bad value is refused.
+    expect(config.vars.BIN_DAYS).toBe("14");
+    expect(config.triggers.crons).toHaveLength(1);
+    const never = jsonc(writeWranglerConfig(w.project, { ...settings, memory: { ...settings.memory, binDays: 0 } }));
+    expect(never.vars.BIN_DAYS).toBe("0");
+    expect(never.triggers.crons).toEqual([]);
+    expect(() => writeWranglerConfig(w!.project, { ...settings, memory: { ...settings.memory, binDays: -1 } })).toThrow(/binDays/);
   });
 
   it("bundles config/skills and the global rules into the private skills file", async () => {

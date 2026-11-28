@@ -14,6 +14,8 @@ declare global {
       MCP_STATE_SECRET?: string;
       /** Private static assets holding skills.json (the user's skills); absent means agent-memory only. */
       SKILLS?: Fetcher;
+      /** Days a deleted note stays in the bin before the daily cron erases it; "0" = never. Default 14. */
+      BIN_DAYS?: string;
     }
   }
 }

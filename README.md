@@ -75,8 +75,10 @@ for a one-off clean Claude Code session, `claude --safe-mode` with `ENABLE_CLAUD
 
 - **Memory server**: a Cloudflare Worker with a D1 database, speaking MCP over Streamable HTTP. PCs use device
   tokens (only their SHA-256 is stored); claude.ai signs in through your own private GitHub App (OAuth 2.1, created
-  with one click during setup, no repository access). Deleting a note moves it to a bin; erasing for good asks you
-  to confirm. A memory browser opens in agents that support MCP Apps.
+  with one click during setup, no repository access). Deleting a note moves it to a bin, where it can be restored;
+  the bin empties itself once a day of notes deleted more than 14 days ago (`memory.binDays` in `agent-cloud.json`,
+  `0` = never). Erasing a note for good sooner asks you to confirm, in a form or, in apps that can't show one, in
+  chat once the note has been in the bin for 24 hours. A memory browser opens in agents that support MCP Apps.
 - **Sync**: ownership-safe. A manifest in `~/.agent-cloud` records a hash of everything it wrote; it only changes
   or removes those entries, reports hand edits as conflicts, and backs up a file before its first write. Paths in
   your folder use `${home}`, so one config works for any user name; a server whose program isn't installed on a

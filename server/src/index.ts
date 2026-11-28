@@ -17,7 +17,7 @@ import {
 import { exportIndexes, exportPage, exportProjects, recordBackup } from "./export";
 import { finishSetup, setupPage, startSetup } from "./github-app";
 import { createServer } from "./mcp";
-import { buildContext } from "./memory";
+import { buildContext, emptyBin } from "./memory";
 
 const mcpHandler = createMcpHandler(createServer, { route: "/mcp" });
 
@@ -103,4 +103,18 @@ export default {
     // Discovery, client registration, token and revocation endpoints.
     return authorizationServer.fetch(request, env, ctx);
   },
+
+  /** The daily cron: empties the bin of notes deleted more than BIN_DAYS days ago. */
+  async scheduled(_controller, env, ctx): Promise<void> {
+    ctx.waitUntil(emptyBin(env.DB, binDays(env)).then((erased) => console.log(`bin: erased ${erased.length} note(s)`)));
+  },
 } satisfies ExportedHandler<Env>;
+
+/**
+ * Days a deleted note stays in the bin: BIN_DAYS as a whole number of days, 14 when unset. "0", and any value that
+ * isn't a whole number of days, means the bin is never emptied automatically (a typo never erases more).
+ */
+export function binDays(env: Pick<Env, "BIN_DAYS">): number {
+  if (env.BIN_DAYS === undefined || env.BIN_DAYS.trim() === "") return 14;
+  return /^\d+$/.test(env.BIN_DAYS.trim()) ? Number(env.BIN_DAYS.trim()) : 0;
+}
